@@ -1,7 +1,9 @@
 package com.tudux.dataframes
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types.{DoubleType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.catalyst.dsl.expressions.StringToAttributeConversionHelper
+import org.apache.spark.sql.functions.{col, expr, lit, year}
+import org.apache.spark.sql.types.{DateType, DoubleType, LongType, StringType, StructField, StructType}
 
 object DataFrameBasics extends App {
 
@@ -25,7 +27,7 @@ object DataFrameBasics extends App {
     StructField("Horsepower", LongType),
     StructField("Weight_in_lbs", LongType),
     StructField("Acceleration", DoubleType),
-    StructField("Year", StringType),
+    StructField("Year", DateType),
     StructField("Origin", StringType)
   ))
 
@@ -38,5 +40,24 @@ object DataFrameBasics extends App {
 
   dfWithProvidedSchema.show()
   dfWithProvidedSchema.take(10).foreach(println)
+
+
+  //Expressions and Select
+  val dfWithKmsPerLiter = dfWithProvidedSchema.select(
+    col("Name"),
+    col("Miles_per_Gallon"),
+    expr("Miles_per_Gallon * 0.425144").as("KM_per_Liter"),
+    col("Year"),
+    col("Origin")
+  )
+
+  dfWithKmsPerLiter.show(20)
+
+  val dfWithFilter = dfWithKmsPerLiter
+    .filter(col("KM_per_Liter") < 8)
+    .filter(col("Origin") === "USA")
+    .filter(year(col("Year")).geq(lit(1980)))
+  dfWithFilter.show(50)
+
 
 }
