@@ -1,7 +1,8 @@
 package com.tudux.dataframes
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types.{DoubleType, LongType, StringType, StructField, StructType, IntegerType}
+import org.apache.spark.sql.functions.{col, sum}
+import org.apache.spark.sql.types.{DoubleType, IntegerType, LongType, StringType, StructField, StructType}
 
 object PopulationToPostgres extends App {
 
@@ -24,7 +25,19 @@ object PopulationToPostgres extends App {
     .schema(populationSchema)
     .load("src/main/resources/data/population.json")
 
-  populationDF.show()
+  val populationByYearDf = populationDF.filter(col("year") === 1970)
+    .select(sum(col("people")))
+  populationByYearDf.show()
+
+  val populationByGroupYearDf = populationDF
+    .groupBy(col("year"))
+    .agg(
+      sum(col("people"))
+    ).orderBy(col("year"))
+
+  populationByYearDf.show()
+  populationByGroupYearDf.show()
 
 
 }
+
