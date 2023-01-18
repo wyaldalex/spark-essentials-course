@@ -1,11 +1,15 @@
 package com.tudux.dataframes
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.sql.functions.{col, sum}
 import org.apache.spark.sql.types.{DoubleType, IntegerType, LongType, StringType, StructField, StructType}
+import org.slf4j.{Logger, LoggerFactory}
+
+import scala.util.{Failure, Success, Try}
 
 object PopulationToPostgres extends App {
 
+  val log: Logger = LoggerFactory.getLogger(PopulationToPostgres.getClass.getName)
   //create a spark session
   val spark = SparkSession.builder()
     .appName("Dataframe Population")
@@ -37,6 +41,33 @@ object PopulationToPostgres extends App {
 
   populationByYearDf.show()
   populationByGroupYearDf.show()
+
+
+  val result = Try({
+
+    val driver = "org.postgresql.Driver"
+    val url = "jdbc:postgresql://localhost:5432/rtjvm"
+    val user = "docker"
+    val password = "docker"
+
+    populationByGroupYearDf
+      .write
+      .format("jdbc")
+      .mode(SaveMode.Append)
+      .option("url", url)
+      .option("user", user)
+      .option("password", password)
+      .option("dbtable", "PEOPLE_BY_YEAR")
+      .option("driver", driver)
+      .save()
+  })
+
+  result match {
+    case Success(_) => log.info("table updated")
+    case Failure(problem) => log.error(s"table update failed with $problem")
+
+  }
+
 
 
 }
